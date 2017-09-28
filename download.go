@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"sync"
 	"log"
-	"fmt"
 	"os"
 	"github.com/valyala/fasthttp"
 	"time"
@@ -18,11 +17,8 @@ func Download(src, target string, thread int) {
 	res, _ := http.Head(src)
 	maps := res.Header
 	length, _ := strconv.Atoi(maps["Content-Length"][0]) // Get the content length from the header request
-	fmt.Println(length)
 	len_sub := length / thread // Bytes for each Go-routine
-	fmt.Println(len_sub)
 	diff := length % thread // Get the remaining for the last request
-	fmt.Println(diff)
 	body := make([][]byte, thread) // Make up a temporary array to hold the data to be written to the file
 	for i := 0; i < thread; i++ {
 		wg.Add(1)
