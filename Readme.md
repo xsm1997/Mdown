@@ -2,7 +2,7 @@
 使用阿里云OSS的官方golang库,总是出现莫名其妙的问题，unexpected EOF、io error、下载完不能合并块等,官方不能及时修复，
 所以简单实现了下,具备以下功能：  <br />
 1、可设置协程数  <br />
-2、协程出错30秒超时自动重试(防止unexpected EOF等)
+2、协程出错30秒超时自动重试(防止unexpected EOF等)  <br />
 3、使用fasthttp作为http client
 
 ### 注意:<br />
