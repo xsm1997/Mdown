@@ -1,9 +1,11 @@
 ## Introduce
-使用阿里云OSS的官方golang库,总是出现莫名其妙的问题，unexpected EOF、io error、下载完不能合并块等,官方不能及时修复，
+使用阿里云OSS的官方golang库下载文件,总是出现莫名其妙的问题，unexpected EOF、io error、下载完不能合并块、不能重试下载等,官方不能及时修复，
 所以简单实现了下,具备以下功能：  <br />
-1、可设置协程数  <br />
-2、协程出错30秒超时自动重试(防止unexpected EOF等)  <br />
-3、使用fasthttp作为http client
+1、支持任意http的分片多线程下载，不局限于oss
+2、可设置协程数  <br />
+3、协程出错30秒超时自动重试(防止unexpected EOF等)  <br />
+4、使用fasthttp作为http client
+
 
 ### 注意:<br />
 因个别运营商有劫持现象，会把oss的文件缓存起来，下载时发生302跳转，直接导致http头中的range无法生效，分块下载失败  <br />
