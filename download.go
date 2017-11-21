@@ -13,19 +13,37 @@ import (
 
 var wg sync.WaitGroup
 
-func Download(src, target string, thread int) {
-	res, _ := http.Head(src)
+func Download(src, target string, timeout time.Duration) (err error) {
+	var res *http.Response
+	for {
+		res, err = http.Head(src)
+		if err == nil {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+
 	maps := res.Header
-	length, _ := strconv.Atoi(maps["Content-Length"][0]) // Get the content length from the header request
-	len_sub := length / thread // Bytes for each Go-routine
-	diff := length % thread // Get the remaining for the last request
-	body := make([][]byte, thread) // Make up a temporary array to hold the data to be written to the file
+	length, _ := strconv.Atoi(maps["Content-Length"][0])
+	if err != nil {
+		return
+	}
+
+	//根据文件大小分线程数量 10m=1,55m=5  100m=10 1g=100
+	thread := length / 10485760
+	if thread == 0 {
+		thread = 1
+	}
+
+	len_sub := length / thread
+	diff := length % thread
+	body := make([][]byte, thread)
 	for i := 0; i < thread; i++ {
 		wg.Add(1)
 		min := len_sub * i       // Min range
 		max := len_sub * (i + 1) // Max range
 		if (i == thread-1) {
-			max += diff // Add the remaining bytes in the last request
+			max += diff
 		}
 		go func(min int, max int, i int) {
 			for {
@@ -34,7 +52,7 @@ func Download(src, target string, thread int) {
 				req.Header.SetByteRange(min, max-1)
 				resp := fasthttp.AcquireResponse()
 				client := &fasthttp.Client{}
-				e := client.DoTimeout(req, resp, time.Second*30)
+				e := client.DoTimeout(req, resp, time.Second*timeout)
 				if e != nil {
 					log.Println("request error,retry:", e)
 					continue
@@ -62,4 +80,5 @@ func Download(src, target string, thread int) {
 		os.Remove(target + "." + strconv.Itoa(j))
 	}
 	f.Close()
+	return
 }
