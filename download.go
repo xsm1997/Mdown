@@ -1,4 +1,4 @@
-package Ossdownloader
+package Mdown
 
 import (
 	"io/ioutil"

@@ -14,7 +14,7 @@
 
 ## Install
 ```
-go get -u https://github.com/bryant24/Ossdownloader
+go get -u https://github.com/bryant24/Mdown
 ```
 
 ## How to use
@@ -23,12 +23,12 @@ package main
 
 import (
 	"strings"
-	"github.com/bryant24/Ossdownloader"
+	"github.com/bryant24/Mdown"
 )
 
 func Test_Download(t *testing.T) {
 
-	src := "http://oss.aliyuncs.com/607afc11/7a70d025-ec54-4fff-ab4e-aef080305645.zip"
+	src := "http://oss.aliyuncs.com/abc.zip"
 
 	//将http更换为https 防止运营商劫持使用缓存
 	url:=strings.Replace(src,`http://`, `https://`, -1)
