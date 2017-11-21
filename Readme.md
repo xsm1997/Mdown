@@ -26,17 +26,16 @@ import (
 	"github.com/bryant24/Ossdownloader"
 )
 
-func main() {
+func Test_Download(t *testing.T) {
 
-	//object地址
-	src := "http://example.oss.aliyuncs.com/607afc11/7a70d025-ec54-4fff-ab4e-aef080305645.zip"
+	src := "http://oss.aliyuncs.com/607afc11/7a70d025-ec54-4fff-ab4e-aef080305645.zip"
 
-	//将http更换为https 防止运营商劫持
-	//如果是https协议可以忽略
+	//将http更换为https 防止运营商劫持使用缓存
 	url:=strings.Replace(src,`http://`, `https://`, -1)
 
-    //设置为10个协程
-	Ossdownloader.Download(url, "a.zip", 10)
+	var timeout time.Duration
+	timeout = 30 //分片超时时间
+	Download(url, "a.zip", timeout)
 }
 
 ```
