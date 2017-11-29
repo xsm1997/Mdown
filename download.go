@@ -1,14 +1,13 @@
 package Mdown
 
 import (
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"sync"
 	"log"
 	"os"
-	"github.com/valyala/fasthttp"
 	"time"
+	"io"
 )
 
 var wg sync.WaitGroup
@@ -37,7 +36,6 @@ func Download(src, target string, timeout time.Duration) (err error) {
 
 	len_sub := length / thread
 	diff := length % thread
-	body := make([][]byte, thread)
 	for i := 0; i < thread; i++ {
 		wg.Add(1)
 		min := len_sub * i       // Min range
@@ -45,25 +43,37 @@ func Download(src, target string, timeout time.Duration) (err error) {
 		if (i == thread-1) {
 			max += diff
 		}
+		req, _ := http.NewRequest("GET", src, nil)
+		var transport http.RoundTripper = &http.Transport{
+			DisableKeepAlives: true,
+		}
 		go func(min int, max int, i int) {
 			for {
-				req := fasthttp.AcquireRequest()
-				req.SetRequestURI(src)
-				req.Header.SetByteRange(min, max-1)
-				resp := fasthttp.AcquireResponse()
-				client := &fasthttp.Client{}
-				e := client.DoTimeout(req, resp, time.Second*timeout)
+				os.Remove(target + "." + strconv.Itoa(i))
+				bytesrange := "bytes=" + strconv.Itoa(min) + "-" + strconv.Itoa(max-1)
+				req.Header.Set("Range", bytesrange)
+				client := http.Client{
+					Transport: transport,
+					Timeout:   timeout * time.Second,
+				}
+				resp, e := client.Do(req)
+
 				if e != nil {
-					log.Println("request error,retry:", e)
+					log.Println("[request error],retry:", e)
+					timeout += 5
 					continue
 				}
 
-				body[i] = resp.Body()
-				e = ioutil.WriteFile(target+"."+strconv.Itoa(i), body[i], 777)
+				ff, _ := os.Create(target + "." + strconv.Itoa(i))
+				_, e = io.Copy(ff, resp.Body)
 				if e != nil {
-					log.Println("retry write file:", e)
+					log.Println("[copy error],retry", e)
+					ff.Close()
+					resp.Body.Close()
 					continue
 				}
+				ff.Close()
+				resp.Body.Close()
 				break
 			}
 			wg.Done()
@@ -75,8 +85,9 @@ func Download(src, target string, timeout time.Duration) (err error) {
 	os.Remove(target)
 	f, _ := os.OpenFile(target, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 777)
 	for j := 0; j < thread; j++ {
-		content, _ := ioutil.ReadFile(target + "." + strconv.Itoa(j))
-		f.Write(content)
+		chunkf, _ := os.Open(target + "." + strconv.Itoa(j))
+		io.Copy(f, chunkf)
+		chunkf.Close()
 		os.Remove(target + "." + strconv.Itoa(j))
 	}
 	f.Close()
