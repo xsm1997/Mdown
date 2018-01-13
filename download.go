@@ -1,13 +1,13 @@
 package Mdown
 
 import (
+	"io"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
-	"log"
-	"os"
 	"time"
-	"io"
 )
 
 var wg sync.WaitGroup
@@ -34,13 +34,17 @@ func Download(src, target string, timeout time.Duration) (err error) {
 		thread = 1
 	}
 
+	if thread > 16 {
+		thread = 16
+	}
+
 	len_sub := length / thread
 	diff := length % thread
 	for i := 0; i < thread; i++ {
 		wg.Add(1)
 		min := len_sub * i       // Min range
 		max := len_sub * (i + 1) // Max range
-		if (i == thread-1) {
+		if i == thread-1 {
 			max += diff
 		}
 		req, _ := http.NewRequest("GET", src, nil)
@@ -83,7 +87,8 @@ func Download(src, target string, timeout time.Duration) (err error) {
 
 	//merge chunk files to target file
 	os.Remove(target)
-	f, _ := os.OpenFile(target, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 777)
+	os.Remove(target + ".tmp")
+	f, _ := os.OpenFile(target+".tmp", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 777)
 	for j := 0; j < thread; j++ {
 		chunkf, _ := os.Open(target + "." + strconv.Itoa(j))
 		io.Copy(f, chunkf)
@@ -91,5 +96,6 @@ func Download(src, target string, timeout time.Duration) (err error) {
 		os.Remove(target + "." + strconv.Itoa(j))
 	}
 	f.Close()
+	os.Rename(target+".tmp", target)
 	return
 }
